@@ -253,6 +253,25 @@ nav.side a.on .ic{background:rgba(255,255,255,.25)}
   .menu-btn{display:inline-flex}
 }
 
+
+.scn{margin:6px 0}
+.say{border-radius:14px;padding:10px 14px;margin:8px 0;max-width:62ch;position:relative}
+.say .who{display:block;font-size:12px;font-weight:800;letter-spacing:.02em;margin-bottom:2px}
+.say.int{background:#F1F3F8;border:1px solid var(--rule);margin-right:40px}
+.say.int .who{color:var(--muted)}
+.say.me{background:var(--cs);border:1px solid color-mix(in srgb,var(--c) 30%,#fff);margin-left:40px}
+.say.me .who{color:var(--c)}
+.say.open{background:#fff;border:2px solid var(--c);font-weight:600}
+.stp.hid{display:none}
+.blk.proceed{background:#ECFDF3;border-left:5px solid #16A34A;border-radius:10px;padding:12px 16px}
+.blk.proceed .lbl{color:#15803D}
+.scctl{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.scctl .hint{flex-basis:100%}
+table.mini{width:100%;border-collapse:collapse;font-size:14.5px;margin:4px 0}
+table.mini th{text-align:left;font-size:12.5px;color:var(--muted);padding:6px 4px;border-bottom:2px solid var(--rule)}
+table.mini td{padding:7px 4px;border-bottom:1px solid var(--rule);font-weight:400;color:var(--ink)}
+table.mini td:last-child{font-weight:400;color:var(--ink)}
+@media (max-width:560px){.say.int{margin-right:0}.say.me{margin-left:0}}
 </style>
 </head>
 <body>
@@ -289,8 +308,8 @@ nav.side a.on .ic{background:rgba(255,255,255,.25)}
 
 <script>
 const TMAY = `<p>I’m a DevOps and Cloud Engineer with about seven years of experience, mostly in AWS, including federal projects. I’ve built infrastructure with Terraform and CI/CD, run applications on Kubernetes, and troubleshot production incidents.</p>
-<p>Those incidents shaped how I work. I want to find the cause, restore the service, and use what I learned to improve the next deployment. That might mean a better pipeline check, clearer monitoring, or a more reliable way to verify a fix. That’s how I reduce risk over time.</p>
-<p>That habit carries into my own learning. I’ve studied after work, taken classes, and since my last role I’ve focused on building real projects. I built Secure Mesh Pipeline to practice secure delivery end to end. Terraform creates the EKS cluster, GitHub Actions builds and scans the image, Argo CD deploys it from Git, and Istio encrypts the traffic between services. Now I’m building ShieldOps, a secure document platform with Terraform, EKS, and Bedrock, and adding an incident investigator with LangGraph.</p>
+<p>Those incidents shaped how I work. Now, when something fails, I focus on finding the cause, restoring the service, and using what I learn to improve the next deployment. That might mean adding a pipeline check, making monitoring clearer, or verifying that a fix actually restored the application. That’s how I reduce risk over time.</p>
+<p>That habit carries into my own learning. Even when I was working, I made time to study after hours, and since my last role, I’ve kept learning through classes and by building real projects. I built Secure Mesh Pipeline to practice secure delivery end to end. Terraform creates the EKS cluster, GitHub Actions builds and scans the image, Argo CD deploys it from Git, and Istio encrypts the traffic between services. Now I’m building ShieldOps, a secure document platform with Terraform, EKS, and Bedrock, and adding an incident investigator with LangGraph.</p>
 <p>Outside of tech, I love hiking, and I’m active in my community. I help with catering at festivals, and friends often ask me for decoration ideas for their events. I just enjoy helping people bring their plans to life.</p>
 <p>I like learning something, testing it, and making it useful. That’s what I want to bring to your team.</p>`;
 
@@ -347,6 +366,57 @@ kubectl auth can-i delete pods
 kubectl rollout status deployment/&lt;name&gt;
 kubectl rollout undo deployment/&lt;name&gt;    # rollback
 kubectl diff -f app.yaml              # preview before apply</code></pre>`},
+]},
+
+{id:"crashloop", title:"Scenario: CrashLoopBackOff", blurb:"Study the guide first, then practice the scenarios. The interviewer describes symptoms, you ask the questions, identify the problem, and explain how you will proceed.", items:[
+{q:"What is CrashLoopBackOff?", d:`The container starts, crashes, and Kubernetes keeps restarting it. Each restart waits longer than the last (10s, 20s, 40s, up to 5 minutes). The key sign is that the container <strong>did start</strong> and the <strong>restart count keeps rising</strong>.`, e:`<code>kubectl get pods</code> shows <code>STATUS: CrashLoopBackOff</code> and <code>RESTARTS: 14</code>, going up every few minutes.`},
+{q:"How will the interviewer describe it without naming it?", d:`<ul class="steps"><li>“The app keeps going up and down.”</li><li>“Since the release, users get errors on and off.”</li><li>“The pods show Running, then a few seconds later they’re not.”</li><li>“The restart count keeps climbing.”</li><li>“The deployment finished, but the new version never serves traffic.”</li></ul>`, e:`Words like <strong>restarting</strong>, <strong>up and down</strong>, or <strong>on and off</strong> are your first clue.`},
+{q:"Which questions do I ask, in order?", d:`<ol class="steps"><li><strong>Status:</strong> “What does <code>kubectl get pods</code> show in STATUS and RESTARTS?”</li><li><strong>Started?</strong> “Did the container ever start, or did it never run?”</li><li><strong>Events:</strong> “What do the events say in <code>kubectl describe pod</code>?”</li><li><strong>Exit code:</strong> “What’s the Last State and exit code?”</li><li><strong>Logs:</strong> “What does <code>kubectl logs &lt;pod&gt; --previous</code> show?”</li><li><strong>Change:</strong> “What changed right before it started?”</li></ol>`, e:`Easy way to remember it: <strong>Status, Events, Exit code, Logs, Change.</strong> Use <code>--previous</code> because the current container just restarted and may have no logs yet.`},
+{q:"How do I tell it apart from similar problems?", d:`<table class="mini"><tr><th>What you see</th><th>What it is</th></tr><tr><td>Restarts rising, “Back-off restarting failed container”</td><td><strong>CrashLoopBackOff</strong></td></tr><tr><td>Restarts 0, “Failed to pull image”</td><td>ImagePullBackOff</td></tr><tr><td>Restarts 0, “FailedScheduling”</td><td>Pending</td></tr><tr><td>Running, READY 0/1, restarts 0</td><td>Readiness failure</td></tr><tr><td>Restarts rising, “Liveness probe failed”</td><td>Liveness is killing it</td></tr><tr><td>Last State OOMKilled, exit 137</td><td>Out of memory</td></tr></table>`, e:`The two questions that separate them: <strong>did the container ever start</strong>, and <strong>is the restart count going up</strong>? Yes to both means a crash loop.`},
+{q:"What do the exit codes mean?", d:`<ul class="steps"><li><strong>Exit 1:</strong> the application threw an error. Read the logs.</li><li><strong>Exit 137:</strong> killed, usually OOMKilled or a failed liveness probe.</li><li><strong>Exit 139:</strong> segmentation fault inside the app.</li><li><strong>Exit 143:</strong> received a shutdown signal (SIGTERM).</li><li><strong>Exit 0:</strong> the app finished and exited. A web server should never do that, so the command or entrypoint is probably wrong.</li></ul>`, e:`Exit 137 plus “OOMKilled” in Last State means memory. Exit 137 plus “Liveness probe failed” in events means the probe.`},
+{q:"How do I structure “how will you proceed”?", d:`<ol class="steps"><li><strong>Mitigate:</strong> if production is down, roll back first to restore users.</li><li><strong>Fix:</strong> correct the root cause.</li><li><strong>Verify:</strong> pods Running and Ready, restarts stop, the app actually answers.</li><li><strong>Prevent:</strong> a pipeline check, alert, or guardrail so it can’t happen again.</li><li><strong>Communicate:</strong> update the team and document it.</li></ol>`, e:`“I’d roll back to restore service, fix the missing variable, confirm the pods stay Ready, and add a pipeline check so a missing variable fails the deploy instead of production.”`},
+{sc:1, q:"Scenario 1: Up and down after the release", open:`“Since this morning’s release, users say the app is up and down. What would you do?”`, steps:[
+[`What does <code>kubectl get pods</code> show in STATUS and RESTARTS?`,`Some show Running, some show CrashLoopBackOff. Restarts are at 14 and climbing.`],
+[`So the container starts and then dies. What’s the Last State and exit code in <code>describe pod</code>?`,`Terminated, exit code 1.`],
+[`Exit 1 means an application error, not memory. What do the logs from the previous crash show?`,`<code>Error: DATABASE_URL is not set</code>`],
+[`What changed in this release?`,`The new version added a database connection. The team updated the code but not the Kubernetes config.`]],
+diag:`<strong>CrashLoopBackOff caused by a missing environment variable.</strong> The new version expects <code>DATABASE_URL</code>, but the ConfigMap/Secret wasn’t updated, so the app exits on startup.`,
+proceed:`<ol class="steps"><li>Users are affected, so I’d first roll back with <code>kubectl rollout undo</code> or revert the commit in Git so Argo CD restores the last good version.</li><li>Add <code>DATABASE_URL</code> to the Secret and reference it in the Deployment.</li><li>Redeploy and verify: pods Ready, restarts stop at 0, the app responds.</li><li>Prevent it: add a pipeline check that validates required variables, and make the app fail with a clear message.</li><li>Update the team and document it.</li></ol>`},
+{sc:1, q:"Scenario 2: New pods fail, old ones are fine", open:`“We deployed a new version of the orders service. The old pods are fine, but the new ones never come up. What do you check?”`, steps:[
+[`What’s the STATUS and RESTARTS on the new pods?`,`CrashLoopBackOff, restarts at 6.`],
+[`What’s the exit code?`,`Exit code 1.`],
+[`What do the previous logs say?`,`<code>connection refused: postgres:5432</code>`],
+[`Can other pods reach the database? And did anything change in networking?`,`The old pods connect fine. The new version is deployed in a new namespace, and there’s a default-deny NetworkPolicy there.`]],
+diag:`<strong>CrashLoopBackOff caused by an unreachable dependency.</strong> The app can’t reach the database, so it exits. The NetworkPolicy blocks it, and the short name <code>postgres</code> only resolves inside the same namespace.`,
+proceed:`<ol class="steps"><li>Old pods are still serving, so there’s no outage. I’d pause the rollout.</li><li>Test from the new namespace with a debug pod: <code>kubectl run debug --image=busybox -it --rm -- sh</code>, then <code>nc -zv postgres.data.svc.cluster.local 5432</code>.</li><li>Fix: use the full DNS name and add a NetworkPolicy allowing the orders pods to reach the database on 5432.</li><li>Verify pods Ready and orders working end to end.</li><li>Prevent: add connectivity checks to the release checklist, and make the app retry instead of crashing immediately.</li></ol>`},
+{sc:1, q:"Scenario 3: Works, then dies under load", open:`“The app works fine in the morning, but during peak hours it keeps restarting. What’s going on?”`, steps:[
+[`What do the pods show?`,`CrashLoopBackOff during peak, restarts increasing.`],
+[`What’s the Last State and exit code?`,`Last State: Terminated. Reason: OOMKilled. Exit code 137.`],
+[`What’s the memory limit, and what does usage look like?`,`Limit is 256Mi. <code>kubectl top pod</code> and Datadog show it climbing to around 400Mi at peak.`],
+[`Does memory drop back after peak, or keep growing?`,`It drops back after peak. It’s steady during quiet hours.`]],
+diag:`<strong>CrashLoopBackOff caused by OOMKilled.</strong> The container needs more memory than its 256Mi limit under load, so the kernel kills it (exit 137). Memory drops after peak, so it’s real demand, not a leak.`,
+proceed:`<ol class="steps"><li>Raise the memory limit to fit real usage, for example 512Mi, and set the request close to normal usage.</li><li>Check the node has room, or let Karpenter/Cluster Autoscaler add capacity.</li><li>Consider HPA so more pods share the load at peak.</li><li>Verify no more OOMKilled during the next peak.</li><li>Prevent: alert when memory reaches 80% of the limit, and size limits from real metrics.</li></ol>`},
+{sc:1, q:"Scenario 4: New Java service never comes up", open:`“We deployed a new Java service. It keeps restarting and never becomes available, but the developers say it runs fine on their laptops.”`, steps:[
+[`What do the pods show?`,`Restarts climbing. It shows Running for a bit, then restarts.`],
+[`What do the events say in <code>describe pod</code>?`,`<code>Liveness probe failed: connection refused</code>, then <code>Container will be restarted</code>.`],
+[`What’s the exit code?`,`137.`],
+[`How long does the app take to start, and what’s the probe setting?`,`The logs show it needs about 60 seconds to start. The liveness probe starts checking after 10 seconds and fails after 3 tries.`]],
+diag:`<strong>CrashLoopBackOff caused by a liveness probe that’s too aggressive.</strong> Kubernetes kills the app (exit 137) before it finishes starting, so it never gets a chance to run.`,
+proceed:`<ol class="steps"><li>Add a <code>startupProbe</code> that gives the app up to about 2 minutes to start. Liveness only begins after startup succeeds.</li><li>Keep a separate readiness probe so traffic only arrives when the app is ready.</li><li>Make sure the liveness probe checks only the app itself, not the database, so a dependency issue doesn’t cause restarts.</li><li>Verify the pods start once and stay up.</li><li>Prevent: a standard probe template for slow-starting apps.</li></ol>`},
+{sc:1, q:"Scenario 5: Exits right away with no errors", open:`“We rebuilt the image with a new Dockerfile. The pod keeps restarting, but there are no errors in the logs.”`, steps:[
+[`What do the pods show?`,`STATUS goes Completed, then CrashLoopBackOff. Restarts rising.`],
+[`What’s the exit code?`,`Exit code 0.`],
+[`Exit 0 means it finished normally. What do the logs show?`,`Just <code>Setup complete</code>, then nothing.`],
+[`What changed in the Dockerfile?`,`The CMD now runs a setup script instead of starting the web server.`]],
+diag:`<strong>CrashLoopBackOff caused by a wrong command.</strong> The container runs a script that finishes and exits (exit 0). A Deployment expects a long-running process, so Kubernetes keeps restarting it.`,
+proceed:`<ol class="steps"><li>Fix the CMD/ENTRYPOINT so the web server runs in the foreground, for example running setup first, then starting the server.</li><li>If setup is a one-time task, move it to an initContainer or a Job.</li><li>Rebuild, redeploy, and verify the container stays Running.</li><li>Prevent: a CI smoke test that starts the container and checks it’s still running after 30 seconds.</li></ol>`},
+{sc:1, q:"Scenario 6: Broke after security hardening", open:`“After the security team hardened our pods, one service keeps restarting. The others are fine.”`, steps:[
+[`What do the pods show?`,`CrashLoopBackOff, restarts rising.`],
+[`What’s the exit code?`,`Exit code 1.`],
+[`What do the previous logs say?`,`<code>permission denied: /app/cache</code>`],
+[`What did the hardening change?`,`The pods now run with <code>runAsNonRoot: true</code> and <code>readOnlyRootFilesystem: true</code>.`]],
+diag:`<strong>CrashLoopBackOff caused by a permission problem.</strong> The app writes to <code>/app/cache</code>, but the root filesystem is now read-only and the user isn’t root, so it can’t write and exits.`,
+proceed:`<ol class="steps"><li>Keep the hardening. Don’t roll back security.</li><li>Mount a writable <code>emptyDir</code> volume at <code>/app/cache</code>.</li><li>If needed, set <code>fsGroup</code> so the non-root user owns that path.</li><li>Verify the pod runs and the cache works.</li><li>Prevent: test hardened settings in staging first and document which paths each app needs to write.</li></ol>`},
 ]},
 
 {id:"terraform", title:"Terraform", blurb:"Terraform builds the house.", items:[
@@ -561,10 +631,10 @@ const ALL=SECTIONS.flatMap(s=>s.items);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const strip=h=>{const d=document.createElement("div");d.innerHTML=h||"";return d.textContent;};
-ALL.forEach(it=>{const parts=[it.q,it.d,it.e,it.c,it.x,it.s,it.t,it.a,it.r,it.note,...(it.fu||[]).flat()];it.text=parts.map(strip).join(" ").toLowerCase();});
+ALL.forEach(it=>{const parts=[it.q,it.d,it.e,it.c,it.x,it.s,it.t,it.a,it.r,it.note,it.open,it.diag,it.proceed,...(it.fu||[]).flat(),...(it.steps||[]).flat()];it.text=parts.map(strip).join(" ").toLowerCase();});
 const chev=`<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`;
 const solidCount=s=>s.items.filter(i=>status[i.id]==="solid").length;
-const THEME={experience:["💼","#2563EB","#DBEAFE"],troubleshooting:["🧩","#E11D48","#FFE4E6"],"k8s-troubleshooting":["🩺","#EA580C","#FFEDD5"],terraform:["🏗️","#7C3AED","#EDE9FE"],gitops:["🔄","#0D9488","#CCFBF1"],k8s:["☸️","#0284C7","#E0F2FE"],networking:["🌐","#4F46E5","#E0E7FF"],"k8s-security":["🔐","#059669","#D1FAE5"],istio:["🕸️","#0891B2","#CFFAFE"],aws:["☁️","#D97706","#FEF3C7"],observability:["📊","#9333EA","#F3E8FF"],ansible:["🛠️","#DB2777","#FCE7F3"],python:["🐍","#16A34A","#DCFCE7"],azure:["🔷","#1D4ED8","#DBEAFE"],design:["📐","#0F766E","#CCFBF1"],star:["⭐","#B8860B","#FBF0CC"]};
+const THEME={experience:["💼","#2563EB","#DBEAFE"],troubleshooting:["🧩","#E11D48","#FFE4E6"],"k8s-troubleshooting":["🩺","#EA580C","#FFEDD5"],crashloop:["🚨","#DC2626","#FEE2E2"],terraform:["🏗️","#7C3AED","#EDE9FE"],gitops:["🔄","#0D9488","#CCFBF1"],k8s:["☸️","#0284C7","#E0F2FE"],networking:["🌐","#4F46E5","#E0E7FF"],"k8s-security":["🔐","#059669","#D1FAE5"],istio:["🕸️","#0891B2","#CFFAFE"],aws:["☁️","#D97706","#FEF3C7"],observability:["📊","#9333EA","#F3E8FF"],ansible:["🛠️","#DB2777","#FCE7F3"],python:["🐍","#16A34A","#DCFCE7"],azure:["🔷","#1D4ED8","#DBEAFE"],design:["📐","#0F766E","#CCFBF1"],star:["⭐","#B8860B","#FBF0CC"]};
 const TH=id=>THEME[id]||["📌","#4F46E5","#EEF0FF"];
 const cv=id=>{const t=TH(id);return `--c:${t[1]};--cs:${t[2]}`;};
  const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
@@ -578,7 +648,26 @@ function hl(html,term){
   [...d.childNodes].forEach(walk); return d.innerHTML;
 }
 
-function body(it){
+
+function scenarioHTML(it,full){
+  const h=full?"":"hid";
+  let x=`<div class="scn"><div class="say open"><span class="who">🎤 Interviewer opens with</span>${it.open}</div>`;
+  it.steps.forEach(st=>{x+=`<div class="stp ${h}"><div class="say me"><span class="who">🙋 You ask</span>${st[0]}</div><div class="say int"><span class="who">🎤 Interviewer</span>${st[1]}</div></div>`;});
+  x+=`<div class="blk ex stp ${h}"><div class="lbl">🎯 What it is</div><div>${it.diag}</div></div>`;
+  x+=`<div class="blk proceed stp ${h}"><div class="lbl">🛠️ How I will proceed</div><div>${it.proceed}</div></div>`;
+  if(!full) x+=`<div class="scctl"><span class="hint">Think of your next question first, then tap.</span><button class="btn tint" data-next>🙋 Ask my first question</button><button class="btn" data-all>Show everything</button><button class="btn" data-reset hidden>↺ Start over</button></div>`;
+  return x+`</div>`;
+}
+function nextLabel(scn){
+  const n=scn.querySelector(".stp.hid");
+  if(!n) return null;
+  if(n.classList.contains("proceed")) return "🛠️ How will I proceed?";
+  if(n.classList.contains("ex")) return "🎯 What is it?";
+  return "🙋 Ask my next question";
+}
+
+function body(it,full){
+  if(it.sc) return scenarioHTML(it,full);
   let h="";
   if(it.note) h+=`<div class="caution">${it.note}</div>`;
   if(it.star){
@@ -647,6 +736,15 @@ function route(){
   renderNav(current); window.scrollTo(0,0);
 }
 document.addEventListener("click",e=>{
+  const sc=e.target.closest("[data-next],[data-all],[data-reset]");
+  if(sc){const scn=sc.closest(".scn");const ctl=scn.querySelector(".scctl");
+    if(sc.hasAttribute("data-next")){const n=scn.querySelector(".stp.hid");if(n)n.classList.remove("hid");}
+    if(sc.hasAttribute("data-all"))scn.querySelectorAll(".stp.hid").forEach(x=>x.classList.remove("hid"));
+    if(sc.hasAttribute("data-reset"))scn.querySelectorAll(".stp").forEach(x=>x.classList.add("hid"));
+    const lab=nextLabel(scn),nb=ctl.querySelector("[data-next]");
+    if(lab){nb.hidden=false;nb.textContent=sc.hasAttribute("data-reset")?"🙋 Ask my first question":lab;ctl.querySelector("[data-all]").hidden=false;ctl.querySelector("[data-reset]").hidden=true;}
+    else{nb.hidden=true;ctl.querySelector("[data-all]").hidden=true;ctl.querySelector("[data-reset]").hidden=false;}
+    return;}
   const g=e.target.closest("[data-go]");
   if(g){e.preventDefault();closeMenu();go(g.dataset.go);return;}
   const head=e.target.closest(".q > button");
@@ -685,13 +783,13 @@ function showCard(){
   if(!deck.length){c.innerHTML=`<div class="empty">No cards in this set. Pick a different set above.</div>`;$("fcCount").textContent="";toggleBtns(true);return;}
   if(pos>=deck.length){c.innerHTML=`<h2>Round complete</h2><p class="hint">${deck.filter(i=>status[i.id]==="solid").length} of ${deck.length} marked as ready. Switch to “Needs work” to drill the rest.</p><button class="btn primary" id="again">Go again</button>`;$("again").onclick=buildDeck;$("fcCount").textContent="";toggleBtns(true);return;}
   const it=deck[pos];
-  c.style.cssText=cv(it.sec.id);c.innerHTML=`<div class="where">${TH(it.sec.id)[0]} ${esc(it.sec.title)}</div><h2>${esc(it.q)}</h2><div id="cardAns"></div>`;
+  c.style.cssText=cv(it.sec.id);c.innerHTML=`<div class="where">${TH(it.sec.id)[0]} ${esc(it.sec.title)}</div><h2>${esc(it.q)}</h2>${it.sc?`<div class="say open" style="margin-top:10px"><span class="who">🎤 Interviewer opens with</span>${it.open}</div><p class="hint">Say your questions out loud, name the problem, and explain how you’ll proceed. Then reveal.</p>`:""}<div id="cardAns"></div>`;
   $("fcCount").textContent=`${pos+1} of ${deck.length}`;
   cardStart=Date.now();$("fcClock").textContent="0:00";
   timer=setInterval(()=>{$("fcClock").textContent=fmt(Math.floor((Date.now()-cardStart)/1000))},500);
   toggleBtns();
 }
-function reveal(){if(revealed||!deck.length||pos>=deck.length)return;revealed=true;clearInterval(timer);$("cardAns").innerHTML=`<div class="ans">${body(deck[pos])}</div>`;toggleBtns();}
+function reveal(){if(revealed||!deck.length||pos>=deck.length)return;revealed=true;clearInterval(timer);$("cardAns").innerHTML=`<div class="ans">${body(deck[pos],true)}</div>`;toggleBtns();}
 function grade(v){if(!revealed)return;status[deck[pos].id]=v;save();pos++;showCard();}
 function openFC(scope){scopeSel.value=[...scopeSel.options].some(o=>o.value===scope)?scope:"all";$("fc").classList.add("show");document.body.style.overflow="hidden";buildDeck();}
 function closeFC(){$("fc").classList.remove("show");document.body.style.overflow="";clearInterval(timer);route();}
