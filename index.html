@@ -813,7 +813,7 @@ function renderNav(active){
 }
 function renderHome(){
   const ready=ALL.filter(i=>status[i.id]==="solid").length, rv=ALL.filter(i=>status[i.id]==="review").length;
-  $("main").innerHTML=`<section class="hero"><div class="hi">Hi Shammah 👋</div><h1>Ready for your next interview?</h1>
+  $("main").innerHTML=`<section class="hero"><div class="hi">Hi Shammah 👋 <span class="ver" style="font-weight:600;opacity:.85;margin-left:8px;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 10px">Version 7 · Sep 27</span></div><h1>Ready for your next interview?</h1>
   <p class="lead">Every answer starts with a short meaning, then a practical example. Open a section, say it out loud, and mark what you’ve got.</p>
   <div class="stats"><div class="stat"><b>${ALL.length}</b><span>Questions</span></div><div class="stat"><b style="color:var(--ok)">${ready}</b><span>Ready</span></div><div class="stat"><b style="color:#D97706">${rv}</b><span>Needs work</span></div><div class="stat"><b>${SECTIONS.length}</b><span>Sections</span></div></div>
   <div class="acts"><button class="btn primary" id="goFC">🃏 Practice with flashcards</button><a class="btn" href="javascript:void(0)" data-go="star" style="text-decoration:none;color:var(--ink)">⭐ STAR stories</a></div></section>
