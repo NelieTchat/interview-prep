@@ -967,10 +967,54 @@ def stop_instances(event, context):
 {q:"Bash story: EC2 backup script", d:`A Bash script used the AWS CLI to snapshot instances daily and delete old snapshots for retention.`, e:`It kept disaster recovery compliant without anyone doing snapshots by hand.`},
 ]},
 
-{id:"azure", title:"Azure", blurb:"AWS-primary. Map the services.", items:[
+{id:"azure", title:"Azure & AKS", blurb:"AWS-primary, so map the services. AKS troubleshooting uses the same kubectl method as EKS. Only the Azure layer around the cluster changes.", items:[
 {q:"What is your experience with Azure?", d:`AWS is my primary platform, but I understand Azure fundamentals: Entra ID, Landing Zones, Resource Groups, VNets, VMs, Blob Storage, AKS. Cloud concepts transfer.`, e:`VMs ≈ EC2, Blob ≈ S3, AKS ≈ EKS, VNet ≈ VPC, NSG ≈ Security Group, Landing Zone ≈ Control Tower.`},
 {q:"Could you work in Azure tomorrow?", d:`Yes. Identity, networking, compute, storage, Kubernetes, Terraform, and monitoring exist on both. I’d need time for Azure-specific details.`, e:`Terraform is the same workflow. I’d swap the AWS provider for azurerm.`},
 {q:"Entra ID, Landing Zones, Azure networking?", d:`Entra ID: identity, SSO, federation, RBAC, Managed Identities. Landing Zone: a governed foundation before workloads, like Control Tower. Networking: VNets, subnets, NSGs, route tables, private endpoints, hub-and-spoke.`, e:`Federating Entra ID with AWS lets users sign in once and assume IAM roles.`},
+{q:"How do you troubleshoot on AKS compared to EKS?", d:`The Kubernetes method is exactly the same: status, events, logs, then the layer that’s failing, with the same kubectl commands. What changes is the <strong>cloud layer around the cluster</strong>: the registry, identity, networking, and load balancers are Azure services instead of AWS ones.`, e:`<table class="mini"><tr><th>EKS (AWS)</th><th>AKS (Azure)</th></tr><tr><td>ECR</td><td>ACR (Azure Container Registry)</td></tr><tr><td>IRSA</td><td>Workload Identity</td></tr><tr><td>Node groups</td><td>Node pools</td></tr><tr><td>VPC CNI</td><td>Azure CNI (or CNI Overlay)</td></tr><tr><td>Security groups</td><td>NSGs (Network Security Groups)</td></tr><tr><td>ALB / NLB</td><td>Azure Load Balancer, Application Gateway</td></tr><tr><td>IAM</td><td>Entra ID + Azure RBAC</td></tr><tr><td>CloudWatch Container Insights</td><td>Azure Monitor Container Insights</td></tr></table>`},
+{q:"How do you connect to AKS and start checking?", d:`Sign in with the Azure CLI, get the cluster credentials, then use kubectl exactly like on EKS. Use <code>az aks</code> commands for the cluster and node pools themselves.`, x:`<pre><code>az login
+az aks get-credentials -g my-rg -n my-aks     # like: aws eks update-kubeconfig
+kubectl get nodes
+kubectl get pods -A
+az aks show -g my-rg -n my-aks -o table         # cluster state, version
+az aks nodepool list -g my-rg --cluster-name my-aks -o table
+az aks check-acr -g my-rg -n my-aks --acr myacr.azurecr.io   # can nodes pull from ACR?
+az aks command invoke -g my-rg -n my-aks --command "kubectl get pods -A"   # private cluster</code></pre>`},
+{q:"Example: tracing an issue on AKS, step by step", d:`Same trace as on EKS, from the pod outward, switching to Azure only when the evidence points there.`, e:`<ol class="steps"><li><code>kubectl get pods</code>: new pods in <strong>ImagePullBackOff</strong>, restarts 0.</li><li><code>kubectl describe pod</code>: events say <code>401 Unauthorized</code> pulling from <code>myacr.azurecr.io</code>.</li><li>So it’s a permission problem, not a wrong tag. On EKS I’d check the node role’s ECR access. On AKS, I check the kubelet identity’s access to ACR: <code>az aks check-acr</code>.</li><li>It fails: the kubelet identity doesn’t have the <strong>AcrPull</strong> role.</li><li>Fix: <code>az aks update -g my-rg -n my-aks --attach-acr myacr</code>, then verify the pods pull and become Ready.</li><li>Prevent: attach ACR in the Terraform cluster definition, so every new cluster has it.</li></ol>`},
+{q:"How do you check logs and metrics on AKS?", d:`<strong>Azure Monitor Container Insights</strong> collects pod, node, and container logs and metrics into a <strong>Log Analytics workspace</strong>. You query them with <strong>KQL</strong>, like CloudWatch Logs Insights on AWS. kubectl logs and events still work the same.`, x:`<pre><code>// errors from one namespace in the last hour
+ContainerLogV2
+| where TimeGenerated &gt; ago(1h) and PodNamespace == "orders"
+| where LogMessage has "error"
+| project TimeGenerated, PodName, LogMessage
+
+// pods that are not running
+KubePodInventory
+| where PodStatus != "Running"
+| summarize count() by Name, Namespace, PodStatus</code></pre>`},
+{sc:1, q:"AKS Scenario 1: Can’t pull images from ACR", open:`“We created a new AKS cluster. Our app’s image is in ACR, but none of the pods start.”`, steps:[
+[`What’s the pod status?`,`ImagePullBackOff, 0 restarts.`],
+[`What’s the exact error in the events?`,`<code>failed to authorize: 401 Unauthorized</code> from <code>myacr.azurecr.io</code>.`],
+[`What does <code>az aks check-acr</code> say?`,`The kubelet identity can’t authenticate to the registry.`]],
+diag:`<strong>ImagePullBackOff from missing ACR permission.</strong> The cluster’s kubelet identity doesn’t have the AcrPull role on the registry. Same idea as an EKS node role without ECR read access.`,
+proceed:`<ol class="steps"><li>Run <code>az aks update -g my-rg -n my-aks --attach-acr myacr</code> to grant AcrPull.</li><li>Verify with <code>az aks check-acr</code> and watch the pods pull and become Ready.</li><li>Prevent: attach ACR in Terraform when the cluster is created.</li></ol>`},
+{sc:1, q:"AKS Scenario 2: LoadBalancer stuck without an IP", open:`“We exposed our app with a Service of type LoadBalancer on AKS. It’s been 20 minutes and there’s still no external IP.”`, steps:[
+[`What does <code>kubectl get svc</code> show?`,`<code>EXTERNAL-IP: &lt;pending&gt;</code>.`],
+[`What do the events on the Service say?`,`<code>Error syncing load balancer: failed to ensure load balancer ... AuthorizationFailed</code> on the virtual network subnet.`],
+[`Is the cluster in a VNet you created yourself?`,`Yes, a custom VNet in another resource group.`]],
+diag:`<strong>AKS can’t create the load balancer.</strong> The cluster’s managed identity doesn’t have permission on the custom VNet, so Azure refuses to build the load balancer.`,
+proceed:`<ol class="steps"><li>Give the cluster identity the <strong>Network Contributor</strong> role on the subnet (or its resource group), through Terraform.</li><li>Watch the Service get an external IP, then test the app through it.</li><li>Prevent: include this role assignment in the cluster module whenever a custom VNet is used. On EKS, the same pattern is the AWS Load Balancer Controller’s IAM permissions.</li></ol>`},
+{sc:1, q:"AKS Scenario 3: Pods stuck in ContainerCreating", open:`“We scaled up a node pool, but new pods stay in ContainerCreating on the new nodes.”`, steps:[
+[`What do the pod events say?`,`<code>Failed to create pod sandbox ... failed to allocate address</code>.`],
+[`Which network plugin does the cluster use?`,`Azure CNI, where every pod gets an IP from the VNet subnet.`],
+[`How many free IPs are left in the node subnet?`,`Almost none.`]],
+diag:`<strong>Subnet IP exhaustion with Azure CNI.</strong> Just like the EKS VPC CNI case: every pod needs a real subnet IP, and the subnet ran out.`,
+proceed:`<ol class="steps"><li>Short term: move load or add a node pool in a subnet with free IPs.</li><li>Fix: use Azure CNI Overlay (pods get IPs from a separate private range) or a larger subnet.</li><li>Verify new pods get IPs and reach Running.</li><li>Prevent: size subnets for pod growth and alert on free IPs.</li></ol>`},
+{sc:1, q:"AKS Scenario 4: Pod can’t read from Key Vault", open:`“Our app on AKS needs a secret from Azure Key Vault. It works locally, but in the cluster it gets access denied.”`, steps:[
+[`What’s the exact error?`,`<code>403 Forbidden</code> from Key Vault.`],
+[`How is the pod supposed to authenticate?`,`With Workload Identity, like IRSA on EKS.`],
+[`Does the ServiceAccount have the <code>azure.workload.identity/client-id</code> annotation, and the pod the <code>azure.workload.identity/use: "true"</code> label?`,`The annotation is there, but the pod template is missing the label.`]],
+diag:`<strong>Workload Identity not applied to the pod.</strong> Without the label, AKS doesn’t inject the token, so the app falls back to no identity and Key Vault denies it.`,
+proceed:`<ol class="steps"><li>Add the <code>azure.workload.identity/use: "true"</code> label to the pod template and redeploy.</li><li>Also confirm the federated credential’s subject matches <code>system:serviceaccount:&lt;namespace&gt;:&lt;serviceaccount&gt;</code>, and the identity has Key Vault access.</li><li>Verify the app reads the secret.</li><li>Prevent: put the annotation and label in the Helm chart together.</li></ol>`},
 ]},
 
 {id:"ask", title:"Questions to ask them", blurb:"Always have questions ready. Prepare 5, ask 2 or 3. Pick the ones that fit who you’re talking to.", items:[
@@ -1151,7 +1195,7 @@ function renderNav(active){
 }
 function renderHome(){
   const ready=ALL.filter(i=>status[i.id]==="solid").length, rv=ALL.filter(i=>status[i.id]==="review").length;
-  $("main").innerHTML=`<section class="hero"><div class="hi">Hi Shammah 👋 <span class="ver" style="font-weight:600;opacity:.85;margin-left:8px;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 10px">Version 15 · Sep 28</span></div><h1>Ready for your next interview?</h1>
+  $("main").innerHTML=`<section class="hero"><div class="hi">Hi Shammah 👋 <span class="ver" style="font-weight:600;opacity:.85;margin-left:8px;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 10px">Version 16 · Sep 28</span></div><h1>Ready for your next interview?</h1>
   <p class="lead">Every answer starts with a short meaning, then a practical example. Open a section, say it out loud, and mark what you’ve got.</p>
   <div class="stats"><div class="stat"><b>${ALL.length}</b><span>Questions</span></div><div class="stat"><b style="color:var(--ok)">${ready}</b><span>Ready</span></div><div class="stat"><b style="color:#D97706">${rv}</b><span>Needs work</span></div><div class="stat"><b>${SECTIONS.length}</b><span>Sections</span></div></div>
   <div class="acts"><button class="btn primary" id="goFC">🃏 Practice with flashcards</button><a class="btn" href="javascript:void(0)" data-go="star" style="text-decoration:none;color:var(--ink)">⭐ STAR stories</a></div></section>
