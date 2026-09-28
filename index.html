@@ -284,6 +284,32 @@ nav.side .grp:first-of-type{margin-top:6px}
 .flowline{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 0;font-size:13.5px;color:var(--muted);font-weight:600}
 .flowline span{background:#fff;border:1px solid var(--rule);border-radius:999px;padding:3px 10px;color:var(--ink)}
 .tile b{color:var(--ink)!important}
+
+/* stage headers that stand out + collapsible */
+nav.side .grp{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:9px;width:100%;margin:10px 0 4px;padding:8px 10px;border-radius:12px;cursor:pointer;background:color-mix(in srgb,var(--g) 10%,#fff);border-left:4px solid var(--g);font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--g)}
+nav.side .grp:hover{background:color-mix(in srgb,var(--g) 16%,#fff)}
+nav.side .grp:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+nav.side .grp b{width:22px;height:22px;border-radius:7px;background:var(--g);color:#fff;display:grid;place-items:center;font-size:12px;flex:none}
+nav.side .grp .gt{flex:1;line-height:1.2}
+nav.side .grp .gc{font-size:11.5px;font-weight:700;opacity:.8}
+nav.side .grp .gv{transition:transform .2s;flex:none}
+nav.side .grp[aria-expanded="false"] .gv{transform:rotate(-90deg)}
+nav.side .gbody{padding-left:6px;margin-bottom:2px}
+nav.side .gbody[hidden]{display:none}
+nav.side .navtools{display:flex;gap:6px;margin:8px 2px 0}
+nav.side .navtools button{flex:1;border:1px solid var(--rule);background:#fff;border-radius:8px;padding:5px 6px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
+nav.side .navtools button:hover{color:var(--ink)}
+.stage{margin-top:18px;border-radius:18px;background:#fff;border:1px solid var(--rule);overflow:hidden}
+.stage-h{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:14px 18px;cursor:pointer;background:linear-gradient(90deg,color-mix(in srgb,var(--g) 16%,#fff),#fff 80%);border-left:6px solid var(--g);margin:0}
+.stage-h:focus-visible{outline:2px solid var(--g);outline-offset:-2px}
+.stage-h b{width:34px;height:34px;border-radius:11px;background:var(--g);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;box-shadow:0 4px 10px color-mix(in srgb,var(--g) 35%,transparent)}
+.stage-h span{font-size:1.15rem;font-weight:800;color:var(--ink);letter-spacing:-.01em}
+.stage-h small{color:var(--muted);font-size:13px;font-weight:600;margin-left:auto}
+.stage-h .gv{color:var(--g);transition:transform .2s}
+.stage-h[aria-expanded="false"] .gv{transform:rotate(-90deg)}
+.stage .tiles{padding:14px 16px 16px}
+.stage .tiles[hidden]{display:none}
+.stagetools{display:flex;gap:8px;margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -1005,14 +1031,14 @@ def stop_instances(event, context):
 ];
 
 const FLOW=[
-{n:1,t:"Get ready",i:"🎯",ids:["experience","itlabs"]},
-{n:2,t:"Code",i:"💻",ids:["git","python"]},
-{n:3,t:"Cloud & infrastructure",i:"☁️",ids:["aws","terraform","ansible","azure"]},
-{n:4,t:"Kubernetes platform",i:"☸️",ids:["k8s","networking","k8s-security"]},
-{n:5,t:"Deploy & release",i:"🚀",ids:["helm","gitops"]},
-{n:6,t:"Run & observe",i:"📡",ids:["istio","observability"]},
-{n:7,t:"Troubleshoot",i:"🩺",ids:["troubleshooting","k8s-troubleshooting","pending","imagepull","crashloop","rollout","http503","dns","nodes"]},
-{n:8,t:"Design & behavioral",i:"🧠",ids:["design","star","ask"]}];
+{n:1,t:"Get ready",i:"🎯",c:"#C026D3",ids:["experience","itlabs"]},
+{n:2,t:"Code",i:"💻",c:"#EA580C",ids:["git","python"]},
+{n:3,t:"Cloud & infrastructure",i:"☁️",c:"#D97706",ids:["aws","terraform","ansible","azure"]},
+{n:4,t:"Kubernetes platform",i:"☸️",c:"#0284C7",ids:["k8s","networking","k8s-security"]},
+{n:5,t:"Deploy & release",i:"🚀",c:"#1E3A8A",ids:["helm","gitops"]},
+{n:6,t:"Run & observe",i:"📡",c:"#9333EA",ids:["istio","observability"]},
+{n:7,t:"Troubleshoot",i:"🩺",c:"#15803D",ids:["troubleshooting","k8s-troubleshooting","pending","imagepull","crashloop","rollout","http503","dns","nodes"]},
+{n:8,t:"Design & behavioral",i:"🧠",c:"#B8860B",ids:["design","star","ask"]}];
 (function(){const order=FLOW.flatMap(g=>g.ids);SECTIONS.sort((a,b)=>{const x=order.indexOf(a.id),y=order.indexOf(b.id);return (x<0?999:x)-(y<0?999:y);});})();
 const PROJECTS = [
 ["Kubernetes, ArgoCD, GitOps, IRSA, Istio", "Secure Mesh Pipeline"],
@@ -1104,24 +1130,35 @@ function qHTML(it,term,showSec,idx){
   return `<div class="q" data-id="${it.id}" style="${cv(it.sec.id)}"><button aria-expanded="false"><span class="num ${st}">${mark}</span><span class="qt">${showSec?`<span class="sec-tag">${TH(it.sec.id)[0]} ${esc(it.sec.title)}</span><br>`:""}${hl(esc(it.q),term)}</span>${chev}</button>
   <div class="ans">${hl(body(it),term)}<div class="mark"><button class="chip g" data-mark="solid" aria-pressed="${st==="solid"}">✓ I can say this</button><button class="chip r" data-mark="review" aria-pressed="${st==="review"}">Needs work</button></div></div></div>`;
 }
+
+let navOpen=new Set(), homeClosed=new Set();
+try{navOpen=new Set(JSON.parse(localStorage.getItem("ivprep:navOpen")||"[]"));homeClosed=new Set(JSON.parse(localStorage.getItem("ivprep:homeClosed")||"[]"));}catch(e){}
+const saveUI=()=>{try{localStorage.setItem("ivprep:navOpen",JSON.stringify([...navOpen]));localStorage.setItem("ivprep:homeClosed",JSON.stringify([...homeClosed]));}catch(e){}};
 function renderNav(active){
-  let h=`<a href="javascript:void(0)" data-go="home" class="${active==="home"?"on":""}" style="--c:#4F46E5;--cs:#EEF0FF"><span class="ic">🏠</span><span class="nm">Start here</span></a>`;
-  FLOW.forEach(g=>{h+=`<div class="grp"><b>${g.n}</b>${esc(g.t)}</div>`;
-    g.ids.map(id=>SECTIONS.find(x=>x.id===id)).filter(Boolean).forEach(s=>{const n=solidCount(s);h+=`<a href="javascript:void(0)" data-go="${s.id}" class="${active===s.id?"on":""}" style="${cv(s.id)}"><span class="ic">${TH(s.id)[0]}</span><span class="nm">${esc(s.title)}</span><span class="cnt ${n===s.items.length?"done":""}">${n}/${s.items.length}</span></a>`;});});
+  const act=FLOW.find(g=>g.ids.includes(active));
+  if(act) navOpen.add(act.n);
+  let h=`<a href="javascript:void(0)" data-go="home" class="${active==="home"?"on":""}" style="--c:#4F46E5;--cs:#EEF0FF"><span class="ic">🏠</span><span class="nm">Start here</span></a>
+  <div class="navtools"><button data-navall="open">Expand all</button><button data-navall="close">Collapse all</button></div>`;
+  FLOW.forEach(g=>{const open=navOpen.has(g.n);
+    const secs=g.ids.map(id=>SECTIONS.find(x=>x.id===id)).filter(Boolean);
+    const done=secs.reduce((a,s)=>a+solidCount(s),0), tot=secs.reduce((a,s)=>a+s.items.length,0);
+    h+=`<button class="grp" data-grp="${g.n}" aria-expanded="${open}" style="--g:${g.c}"><b>${g.n}</b><span class="gt">${g.i} ${esc(g.t)}</span><span class="gc">${done}/${tot}</span><svg class="gv" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button><div class="gbody" ${open?"":"hidden"}>`;
+    secs.forEach(s=>{const n=solidCount(s);h+=`<a href="javascript:void(0)" data-go="${s.id}" class="${active===s.id?"on":""}" style="${cv(s.id)}"><span class="ic">${TH(s.id)[0]}</span><span class="nm">${esc(s.title)}</span><span class="cnt ${n===s.items.length?"done":""}">${n}/${s.items.length}</span></a>`;});
+    h+=`</div>`;});
   const rv=ALL.filter(i=>status[i.id]==="review").length;
   h+=`<hr><a href="javascript:void(0)" data-go="review" class="${active==="review"?"on":""}" style="--c:#B45309;--cs:#FEF3C7"><span class="ic">🔁</span><span class="nm">Needs work</span><span class="cnt">${rv}</span></a>`;
   $("side").innerHTML=h;
 }
 function renderHome(){
   const ready=ALL.filter(i=>status[i.id]==="solid").length, rv=ALL.filter(i=>status[i.id]==="review").length;
-  $("main").innerHTML=`<section class="hero"><div class="hi">Hi Shammah 👋 <span class="ver" style="font-weight:600;opacity:.85;margin-left:8px;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 10px">Version 14 · Sep 28</span></div><h1>Ready for your next interview?</h1>
+  $("main").innerHTML=`<section class="hero"><div class="hi">Hi Shammah 👋 <span class="ver" style="font-weight:600;opacity:.85;margin-left:8px;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 10px">Version 15 · Sep 28</span></div><h1>Ready for your next interview?</h1>
   <p class="lead">Every answer starts with a short meaning, then a practical example. Open a section, say it out loud, and mark what you’ve got.</p>
   <div class="stats"><div class="stat"><b>${ALL.length}</b><span>Questions</span></div><div class="stat"><b style="color:var(--ok)">${ready}</b><span>Ready</span></div><div class="stat"><b style="color:#D97706">${rv}</b><span>Needs work</span></div><div class="stat"><b>${SECTIONS.length}</b><span>Sections</span></div></div>
   <div class="acts"><button class="btn primary" id="goFC">🃏 Practice with flashcards</button><a class="btn" href="javascript:void(0)" data-go="star" style="text-decoration:none;color:var(--ink)">⭐ STAR stories</a></div></section>
   <section class="intro"><span class="qmark">“</span><h2>Tell me about yourself</h2><div class="hint">The first question in almost every interview. Aim for about 90 seconds.</div>
   <div class="script">${TMAY}</div>
   <div class="rehearse"><button class="btn primary" id="rh">▶ Start rehearsal</button><span class="clock" id="rhClock">0:00</span><span class="hint">Say it out loud. The timer turns amber after 2 minutes.</span></div></section>
-  <h2 class="sub">Your DevOps path</h2><div class="flowline">${FLOW.map(g=>`<span>${g.i} ${esc(g.t)}</span>`).join("→")}</div>${FLOW.map(g=>`<div class="stage"><div class="stage-h"><b>${g.n}</b><span>${g.i} ${esc(g.t)}</span><small>${g.ids.length} sections</small></div><div class="tiles">${g.ids.map(id=>SECTIONS.find(x=>x.id===id)).filter(Boolean).map(s=>{const n=solidCount(s);return `<a class="tile" href="javascript:void(0)" data-go="${s.id}" style="${cv(s.id)}"><span class="ic">${TH(s.id)[0]}</span><span style="flex:1;min-width:0"><b>${esc(s.title)}</b><span>${s.items.length} questions · ${n} ready</span><div class="bar"><i style="width:${n/s.items.length*100}%"></i></div></span></a>`}).join("")}</div></div>`).join("")}
+  <h2 class="sub">Your DevOps path</h2><div class="flowline">${FLOW.map(g=>`<span>${g.i} ${esc(g.t)}</span>`).join("→")}</div><div class="stagetools"><button class="btn" data-stageall="open">Expand all</button><button class="btn" data-stageall="close">Collapse all</button></div>${FLOW.map(g=>`<div class="stage" style="--g:${g.c}"><button class="stage-h" data-stage="${g.n}" aria-expanded="${!homeClosed.has(g.n)}"><b>${g.n}</b><span>${g.i} ${esc(g.t)}</span><small>${g.ids.length} sections</small><svg class="gv" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button><div class="tiles" ${homeClosed.has(g.n)?"hidden":""}>${g.ids.map(id=>SECTIONS.find(x=>x.id===id)).filter(Boolean).map(s=>{const n=solidCount(s);return `<a class="tile" href="javascript:void(0)" data-go="${s.id}" style="${cv(s.id)}"><span class="ic">${TH(s.id)[0]}</span><span style="flex:1;min-width:0"><b>${esc(s.title)}</b><span>${s.items.length} questions · ${n} ready</span><div class="bar"><i style="width:${n/s.items.length*100}%"></i></div></span></a>`}).join("")}</div></div>`).join("")}
   <div class="grid2"><section class="panel"><h2>📝 Before the call</h2><ul class="rem">${REMINDERS.map(r=>`<li><span>${esc(r)}</span></li>`).join("")}</ul></section>
   <section class="panel"><h2>🗂️ Which project to use</h2><table>${PROJECTS.map(p=>`<tr><td>${esc(p[0])}</td><td>${esc(p[1])}</td></tr>`).join("")}</table></section></div>`;
   $("goFC").onclick=()=>openFC("all");
@@ -1150,6 +1187,14 @@ function route(){
   renderNav(current); window.scrollTo(0,0);
 }
 document.addEventListener("click",e=>{
+  const gb=e.target.closest("[data-grp]");
+  if(gb){const n=+gb.dataset.grp;navOpen.has(n)?navOpen.delete(n):navOpen.add(n);saveUI();const o=navOpen.has(n);gb.setAttribute("aria-expanded",o);gb.nextElementSibling.hidden=!o;return;}
+  const na=e.target.closest("[data-navall]");
+  if(na){if(na.dataset.navall==="open")FLOW.forEach(g=>navOpen.add(g.n));else navOpen.clear();saveUI();renderNav($("q").value.trim().length>1?null:current);return;}
+  const sh=e.target.closest("[data-stage]");
+  if(sh){const n=+sh.dataset.stage;homeClosed.has(n)?homeClosed.delete(n):homeClosed.add(n);saveUI();const o=!homeClosed.has(n);sh.setAttribute("aria-expanded",o);sh.nextElementSibling.hidden=!o;return;}
+  const sa=e.target.closest("[data-stageall]");
+  if(sa){if(sa.dataset.stageall==="close")FLOW.forEach(g=>homeClosed.add(g.n));else homeClosed.clear();saveUI();document.querySelectorAll("[data-stage]").forEach(x=>{const o=!homeClosed.has(+x.dataset.stage);x.setAttribute("aria-expanded",o);x.nextElementSibling.hidden=!o;});return;}
   const sc=e.target.closest("[data-next],[data-all],[data-reset]");
   if(sc){const scn=sc.closest(".scn");const ctl=scn.querySelector(".scctl");
     if(sc.hasAttribute("data-next")){const n=scn.querySelector(".stp.hid");if(n)n.classList.remove("hid");}
